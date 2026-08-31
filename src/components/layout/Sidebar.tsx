@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Atom, Brain, Route, Shield, ScanFace,
-  Link2, Leaf, MessageSquare, BarChart3, FileText, Settings,
+  Link2, Leaf, MessageSquare, BarChart3, FileText, Settings, FileSignature,
   ChevronLeft, ChevronRight, LogOut, User, FlaskConical
 } from 'lucide-react';
 import SpiderLogo from '@/components/ui/SpiderLogo';
@@ -20,6 +20,7 @@ const navItems = [
   { path: '/optimization', icon: Route, label: 'Optimization', group: 'modules' },
   { path: '/threat', icon: Shield, label: 'Threat Detection', group: 'modules' },
   { path: '/deepfake', icon: ScanFace, label: 'Deepfake Detection', group: 'modules' },
+  { path: '/digital-signature', icon: FileSignature, label: 'Digital Signature', group: 'modules' },
   { path: '/factchain', icon: Link2, label: 'FactChain', group: 'modules' },
   { path: '/eco-scanner', icon: Leaf, label: 'Eco-Scanner AI', group: 'modules' },
   { path: '/chatbot', icon: MessageSquare, label: 'AI Chatbot', group: 'tools' },
