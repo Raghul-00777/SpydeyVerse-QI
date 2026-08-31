@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, CheckCircle, BarChart2, Layers, Sparkles, Wand2, X } from 'lucide-react';
+import { CheckCircle, Layers, Sparkles, Wand2, X } from 'lucide-react';
 import type { DatasetSummary, DataRow } from './types';
 import GlowCard from '@/components/ui/GlowCard';
 import { cleanDataset } from './statsUtils';

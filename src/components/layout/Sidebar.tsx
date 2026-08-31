@@ -8,6 +8,11 @@ import {
 import SpiderLogo from '@/components/ui/SpiderLogo';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface SidebarProps {
+  open: boolean;
+  onClose: () => void;
+}
+
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', group: 'main' },
   { path: '/quantum', icon: Atom, label: 'Quantum Intelligence', group: 'modules' },
@@ -31,7 +36,7 @@ const groups: Record<string, string> = {
   account: 'Account',
 };
 
-export default function Sidebar() {
+export default function Sidebar({ open, onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const { profile, signOut } = useAuth();
 
@@ -44,9 +49,10 @@ export default function Sidebar() {
   return (
     <aside
       className={`
-        flex flex-col h-screen bg-void-2 border-r border-white/5
-        transition-all duration-300 ease-in-out flex-shrink-0
-        ${collapsed ? 'w-16' : 'w-64'}
+        fixed inset-y-0 left-0 z-40 flex flex-col bg-void-2 border-r border-white/5
+        transition-all duration-300 ease-in-out transform w-64 sm:static sm:translate-x-0 sm:h-screen
+        ${open ? 'translate-x-0' : '-translate-x-full'}
+        ${collapsed ? 'sm:w-16' : 'sm:w-64'}
       `}
     >
       {/* Logo */}
@@ -60,12 +66,22 @@ export default function Sidebar() {
             <div className="text-[10px] text-slate-500 truncate">Quantum Intelligence</div>
           </div>
         )}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="ml-auto text-slate-500 hover:text-red-400 transition-colors flex-shrink-0"
-        >
-          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={onClose}
+            className="sm:hidden text-slate-500 hover:text-red-400 transition-colors"
+            aria-label="Close menu"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="text-slate-500 hover:text-red-400 transition-colors flex-shrink-0"
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
+        </div>
       </div>
 
       {/* Navigation */}

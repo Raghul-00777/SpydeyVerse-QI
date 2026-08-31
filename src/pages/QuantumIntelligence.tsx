@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Atom, BookOpen, Cpu, Zap, PlayCircle, RotateCcw, ChevronRight, Info, CheckCircle, XCircle, Trophy, Save, History, Sparkles } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Atom, BookOpen, Cpu, Zap, PlayCircle, RotateCcw, Info, CheckCircle, XCircle, Trophy, History, Sparkles } from 'lucide-react';
 import GlowCard from '@/components/ui/GlowCard';
 
 const tabs = ['Bit vs Qubit', 'Superposition', 'Quantum Gates', 'Circuit Sim', 'Applications'];
@@ -126,7 +126,7 @@ function CircuitSimulator() {
       let currentState: '0' | '1' | 'super' = '0';
       let currentProb0 = 100;
       let currentProb1 = 0;
-      let labels: string[] = ['|0⟩'];
+      const labels = ['|0⟩'];
 
       applied.forEach(gate => {
         const sim = simulateGate(gate, currentState);
@@ -262,7 +262,6 @@ export default function QuantumIntelligence() {
   const [quizAnswers, setQuizAnswers] = useState<number[]>([]);
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizResults, setQuizResults] = useState<QuizResult[]>([]);
-  const [showQuiz, setShowQuiz] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('quantum_progress');
@@ -295,7 +294,7 @@ export default function QuantumIntelligence() {
       setProgress(newProgress);
       return next;
     });
-    setShowQuiz(false);
+    setQuizOpen(false);
     setQuizSubmitted(false);
   }
 

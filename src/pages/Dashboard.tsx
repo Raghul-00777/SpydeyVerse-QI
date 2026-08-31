@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Atom, Brain, Shield, Leaf, BarChart3, MessageSquare,
-  TrendingUp, AlertTriangle, CheckCircle, Activity, Zap,
-  Route, ScanFace, Link2, FileText, ArrowRight, Clock
+  Activity, Zap,
+  Route, ScanFace, Link2, FileText, ArrowRight, Clock, TrendingUp, FileSignature
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell
@@ -11,6 +11,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import GlowCard from '@/components/ui/GlowCard';
 import StatusBadge from '@/components/ui/StatusBadge';
+import { countVerifiedToday } from '@/lib/signatureActivity';
 
 const activityData = [
   { time: '00:00', queries: 12, threats: 2, eco: 5 },
@@ -39,6 +40,7 @@ const modules = [
   { path: '/factchain', icon: Link2, label: 'FactChain', status: 'active', score: 85, color: 'from-teal-500 to-emerald-500', desc: '47 sources tracked' },
   { path: '/eco-scanner', icon: Leaf, label: 'Eco-Scanner', status: 'active', score: 78, color: 'from-green-500 to-emerald-500', desc: 'Carbon: 2.3t CO₂e' },
   { path: '/chatbot', icon: MessageSquare, label: 'AI Chatbot', status: 'active', score: 100, color: 'from-red-500 to-rose-500', desc: '156 conversations' },
+  { path: '/digital-signature', icon: FileSignature, label: 'Digital Signature', status: 'active', score: 90, color: 'from-red-600 to-rose-600', desc: 'Keys, sign & verify' },
 ];
 
 const recentActivity = [
@@ -75,6 +77,13 @@ export default function Dashboard() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [greeting, setGreeting] = useState('');
+  const [sigVerified, setSigVerified] = useState(countVerifiedToday());
+
+  useEffect(() => {
+    const onUpdate = () => setSigVerified(countVerifiedToday());
+    window.addEventListener('spydey-signature-updated', onUpdate);
+    return () => window.removeEventListener('spydey-signature-updated', onUpdate);
+  }, []);
 
   useEffect(() => {
     const h = new Date().getHours();
@@ -102,11 +111,12 @@ export default function Dashboard() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard label="Platform Score" value="91.4" sub="Above benchmark" icon={Zap} color="from-red-600 to-rose-600" trend="+3.2%" />
         <StatCard label="Threat Level" value="Medium" sub="3 active alerts" icon={Shield} color="from-amber-500 to-orange-500" />
         <StatCard label="Eco Score" value="78/100" sub="Carbon: 2.3t CO₂e" icon={Leaf} color="from-emerald-500 to-teal-500" trend="+5%" />
         <StatCard label="AI Accuracy" value="99.2%" sub="Last 24 hours" icon={Brain} color="from-rose-700 to-red-700" trend="+0.1%" />
+        <StatCard label="Signatures Verified Today" value={String(sigVerified)} sub="Digital Signature module" icon={FileSignature} color="from-red-600 to-rose-600" />
       </div>
 
       {/* Charts row */}
@@ -188,7 +198,7 @@ export default function Dashboard() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <div className="text-sm font-semibold text-white">Intelligence Modules</div>
-          <span className="text-xs text-slate-500">8 modules active</span>
+          <span className="text-xs text-slate-500">9 modules active</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {modules.map(({ path, icon: Icon, label, status, score, color, desc }) => (

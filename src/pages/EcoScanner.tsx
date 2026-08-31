@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Leaf, Camera, AlertCircle, CheckCircle, FileText, X, Download, Trash2, BarChart3, Activity, Zap } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 import GlowCard from '@/components/ui/GlowCard';
-import { analyzeImage, isOpenRouterConfigured, OpenRouterError } from '@/lib/openrouter';
+import { getEcoScanDemo } from '@/lib/demoMode';
 
 const demoItems = [
   { name: 'Plastic Bottle', icon: '🍶', carbon: 0.082, recyclable: true, material: 'PET Plastic', impact: 'medium' as const },
@@ -124,7 +124,6 @@ export default function EcoScanner() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
   const [aiDetected, setAiDetected] = useState(false);
-  const [aiError, setAiError] = useState<string | null>(null);
   const [history, setHistory] = useState<ScanHistory[]>([]);
   const [generatedReport, setGeneratedReport] = useState<GeneratedReport | null>(null);
   const [generatingReport, setGeneratingReport] = useState(false);
@@ -133,11 +132,42 @@ export default function EcoScanner() {
   const [realTimeAnalysis, setRealTimeAnalysis] = useState(false);
   const [liveItem, setLiveItem] = useState<typeof demoItems[0] | null>(null);
   const [analysisFrame, setAnalysisFrame] = useState<string | null>(null);
+  const [ecoScore, setEcoScore] = useState<number | null>(null);
+  const [ecoRecommendations, setEcoRecommendations] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const analysisIntervalRef = useRef<number | null>(null);
+
+  const MAX_IMAGE_DIMENSION = 512;
+  const IMAGE_QUALITY = 0.7;
+
+  async function compressImage(dataUrl: string): Promise<string> {
+    return new Promise<string>((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+          const ratio = Math.min(MAX_IMAGE_DIMENSION / width, MAX_IMAGE_DIMENSION / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(dataUrl);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', IMAGE_QUALITY));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
 
   useEffect(() => {
     const saved = localStorage.getItem('eco_scan_history');
@@ -178,64 +208,40 @@ export default function EcoScanner() {
     return demoItems[Math.floor(Math.random() * demoItems.length)];
   }
 
-  function parseAiResponse(text: string): typeof demoItems[0] | null {
-    try {
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) return null;
-      const parsed = JSON.parse(jsonMatch[0]);
-      const name = String(parsed.name || parsed.item || parsed.itemName || '').trim();
-      const material = String(parsed.material || '').trim();
-      const recyclable = parsed.recyclable !== undefined ? Boolean(parsed.recyclable) : true;
-      const impact = parsed.impact === 'high' ? 'high' : parsed.impact === 'medium' ? 'medium' : parsed.impact === 'low' ? 'low' : 'low';
-      const carbon = typeof parsed.carbon === 'number' ? parsed.carbon : typeof parsed.carbon_per_item === 'number' ? parsed.carbon_per_item : 0.05;
-      if (!name && !material) return null;
-      const base = findClosestDemoItem(name, material);
-      return { ...base, name: name || base.name, material: material || base.material, carbon, recyclable, impact };
-    } catch {
-      return null;
-    }
-  }
-
   async function analyzeImageWithAI(dataUrl: string) {
     setAiAnalyzing(true);
-    setAiError(null);
     try {
-      const prompt = `Analyze this image and identify the waste item. Respond ONLY with valid JSON (no markdown, no explanation):
-{
-  "name": "exact item name",
-  "material": "primary material type (e.g. PET Plastic, Cardboard, Aluminum, Glass, Polystyrene)",
-  "recyclable": true or false,
-  "impact": "low" or "medium" or "high",
-  "carbon": number (kg CO₂e per item, use realistic value like 0.03-0.2)
-}`;
-      const response = await analyzeImage(dataUrl, prompt);
-      const detected = parseAiResponse(response);
-      if (detected) {
-        setSelected(detected);
-        setAiDetected(true);
-      } else {
-        setSelected(demoItems[Math.floor(Math.random() * demoItems.length)]);
-        setAiDetected(false);
-      }
+      const scanResult = getEcoScanDemo(dataUrl);
+      const baseItem = findClosestDemoItem(scanResult.result.name, scanResult.result.material);
+      setSelected({
+        ...baseItem,
+        name: scanResult.result.name,
+        material: scanResult.result.material,
+        carbon: scanResult.result.carbon,
+        recyclable: scanResult.result.recyclable,
+        impact: scanResult.result.impact,
+      });
+      setAiDetected(true);
+      setEcoScore(scanResult.sustainabilityScore);
+      setEcoRecommendations(scanResult.recommendations);
     } catch (err) {
-      const msg = err instanceof OpenRouterError ? err.message : (err instanceof Error ? err.message : 'Unknown error');
-      setAiError(msg);
-      setSelected(findClosestDemoItem('', '') || demoItems[0]);
+      console.warn('AI image analysis error:', err);
+      setSelected(demoItems[Math.floor(Math.random() * demoItems.length)]);
       setAiDetected(false);
-      console.warn('AI image analysis failed, using fallback:', msg);
     } finally {
       setAiAnalyzing(false);
     }
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
+      reader.onloadend = async () => {
+        const rawDataUrl = reader.result as string;
+        const dataUrl = await compressImage(rawDataUrl);
         setImagePreview(dataUrl);
-        analyzeImageWithAI(dataUrl);
+        await analyzeImageWithAI(dataUrl);
       };
       reader.readAsDataURL(file);
     }
@@ -245,7 +251,6 @@ export default function EcoScanner() {
     setImagePreview(null);
     setSelected(null);
     setAiDetected(false);
-    setAiError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -333,6 +338,12 @@ export default function EcoScanner() {
     setGeneratedReport(null);
     setTimeout(() => {
       const scanResult = calculateEcoResult(selected, qty);
+      if (ecoScore !== null) {
+        scanResult.sustainabilityScore = ecoScore;
+      }
+      if (ecoRecommendations.length > 0) {
+        scanResult.recommendations = ecoRecommendations;
+      }
       setResult(scanResult);
       setScanning(false);
 
@@ -595,30 +606,30 @@ export default function EcoScanner() {
                      <X size={12} />
                    </button>
                    <div className="text-xs font-medium text-emerald-400">Image uploaded — ready to scan</div>
-                   {aiAnalyzing && (
-                     <div className="absolute inset-0 bg-black/60 rounded-lg flex flex-col items-center justify-center gap-2">
-                       <div className="w-4 h-4 spinner" />
-                       <span className="text-[10px] text-emerald-400">AI analyzing image…</span>
-                     </div>
-                   )}
-                   {aiError && (
-                     <div className="absolute bottom-0 left-0 right-0 bg-amber-500/10 border-t border-amber-500/20 text-[9px] text-amber-400 px-2 py-1">
-                       AI detection unavailable — using demo data
-                   </div>
-                   )}
-                 </div>
-               ) : (
-                <>
-                  <Camera size={28} className="text-slate-600 mx-auto mb-2 group-hover:text-emerald-400 transition-colors" />
-                  <div className="text-xs font-medium text-slate-400 group-hover:text-white transition-colors">
-                    Camera Scan / Upload Image
+                    {aiAnalyzing && (
+                      <div className="absolute inset-0 bg-black/60 rounded-lg flex flex-col items-center justify-center gap-2">
+                        <div className="w-4 h-4 spinner" />
+                        <span className="text-[10px] text-emerald-400">AI analyzing image…</span>
+                      </div>
+                    )}
+                    {aiDetected && selected && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-emerald-500/10 border-t border-emerald-500/20 text-[9px] text-emerald-400 px-2 py-1">
+                        ✓ AI-detected: {selected.name}
+                      </div>
+                    )}
                   </div>
-                   <div className="text-[10px] text-slate-600 mt-1">AI detects waste type, material, quantity</div>
-                   <div className="text-[9px] mt-1 flex items-center gap-1.5">
-                     <div className={`w-1.5 h-1.5 rounded-full ${isOpenRouterConfigured() ? 'bg-emerald-400' : 'bg-amber-400'}`} />
-                     <span className={isOpenRouterConfigured() ? 'text-emerald-400' : 'text-amber-400'}>
-                       {isOpenRouterConfigured() ? 'AI Vision Analysis Available' : 'AI Vision Offline — demo mode'}
-                     </span>
+                ) : (
+                 <>
+                   <Camera size={28} className="text-slate-600 mx-auto mb-2 group-hover:text-emerald-400 transition-colors" />
+                   <div className="text-xs font-medium text-slate-400 group-hover:text-white transition-colors">
+                     Camera Scan / Upload Image
+                   </div>
+                    <div className="text-[10px] text-slate-600 mt-1">AI detects waste type, material, quantity</div>
+                    <div className="text-[9px] mt-1 flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                      <span className="text-emerald-400">
+                        AI Vision Analysis Available
+                      </span>
                    </div>
                 </>
               )}

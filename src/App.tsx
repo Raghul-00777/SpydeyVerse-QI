@@ -18,6 +18,7 @@ import DataAnalytics from '@/pages/DataAnalytics';
 import AIReports from '@/pages/AIReports';
 import Settings from '@/pages/Settings';
 import DatasetLab from '@/pages/DatasetLab';
+import DigitalSignature from '@/pages/DigitalSignature';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -57,6 +58,7 @@ function AppRoutes() {
       <Route path="/reports" element={<ProtectedRoute><AppLayout><AIReports /></AppLayout></ProtectedRoute>} />
       <Route path="/settings"     element={<ProtectedRoute><AppLayout><Settings /></AppLayout></ProtectedRoute>} />
       <Route path="/dataset-lab" element={<ProtectedRoute><AppLayout><DatasetLab /></AppLayout></ProtectedRoute>} />
+      <Route path="/digital-signature" element={<ProtectedRoute><AppLayout><DigitalSignature /></AppLayout></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

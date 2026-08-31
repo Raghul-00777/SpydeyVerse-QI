@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
-  Shield, AlertTriangle, Activity, Globe, Smartphone, User, Lock, Eye, TrendingUp,
-  Search, Download, RefreshCw, X, ChevronDown, ChevronUp, ExternalLink, Ban, FileText
+  Shield, AlertTriangle, Activity, Globe, Smartphone, User, Lock, Eye,
+  Search, Download, X, ChevronDown, ChevronUp, ExternalLink, Ban, FileText
 } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import GlowCard from '@/components/ui/GlowCard';
@@ -93,7 +93,7 @@ export default function ThreatDetection() {
   const [liveMonitor, setLiveMonitor] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState<string>('all');
-  const [exported, setExported] = useState<string[]>([]);
+  const [, setExported] = useState<string[]>([]);
 
   const activeThreats = useMemo(() => threats.filter(t => t.status !== 'blocked' && t.status !== 'mitigated').length, [threats]);
   const blockedCount = useMemo(() => threats.filter(t => t.status === 'blocked' || t.status === 'mitigated').length, [threats]);
@@ -180,9 +180,6 @@ export default function ThreatDetection() {
     setExported(prev => [...prev, format]);
     setTimeout(() => setExported(prev => prev.filter(x => x !== format)), 3000);
   }
-
-  const severityColor = (severity: string) =>
-    severity === 'critical' ? 'text-rose-400' : severity === 'high' ? 'text-orange-400' : severity === 'medium' ? 'text-amber-400' : 'text-emerald-400';
 
   const severityBg = (severity: string) =>
     severity === 'critical' ? 'bg-rose-500/20 text-rose-400' :

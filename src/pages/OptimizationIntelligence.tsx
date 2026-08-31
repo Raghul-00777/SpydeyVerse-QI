@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Route, Play, RotateCcw, Info, TrendingUp, Clock, Cpu } from 'lucide-react';
+import { useState } from 'react';
+import { Route, Play, RotateCcw, TrendingUp, Cpu } from 'lucide-react';
 import GlowCard from '@/components/ui/GlowCard';
 
 const algorithms = [

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Brain, Play, CheckCircle, TrendingUp, Target } from 'lucide-react';
+import { Brain, Play } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';

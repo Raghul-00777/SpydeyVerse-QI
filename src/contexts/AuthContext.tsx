@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, checkSupabaseAvailable } from '@/lib/supabase';
 import {
@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [supabaseAvailable]);
 
-  async function fetchOrCreateProfile(authUser: User) {
+  const fetchOrCreateProfile = useCallback(async (authUser: User) => {
     try {
       if (supabaseAvailable) {
         const { data, error } = await supabase
@@ -178,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, [supabaseAvailable]);
 
   async function signIn(email: string, password: string) {
     if (supabaseAvailable) {

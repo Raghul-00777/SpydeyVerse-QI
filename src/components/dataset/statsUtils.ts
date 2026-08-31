@@ -204,7 +204,7 @@ export function generateInsights(summary: DatasetSummary): AIInsight[] {
 
 export function generateMLRecommendations(summary: DatasetSummary): MLRecommendation[] {
   const recs: MLRecommendation[] = [];
-  const { numericCols, categoricalCols, totalRows, columns } = summary;
+  const { numericCols, totalRows, columns } = summary;
   const binaryCols = columns.filter(c => c.unique === 2 && c.type === 'number');
   const hasTimeLike = columns.some(c => c.name.toLowerCase().includes('date') || c.name.toLowerCase().includes('time') || c.type === 'date');
 
@@ -285,7 +285,7 @@ export function simulateMLResult(summary: DatasetSummary, algorithm: string): ML
   };
 }
 
-export function answerNLQuery(question: string, summary: DatasetSummary, rows: DataRow[]): string {
+export function answerNLQuery(question: string, summary: DatasetSummary): string {
   const q = question.toLowerCase();
   const { columns, totalRows, totalCols, duplicateRows, missingTotal, numericCols } = summary;
 

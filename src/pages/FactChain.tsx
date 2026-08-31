@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link2, Search, TrendingUp, AlertTriangle, CheckCircle, Globe, Clock, BarChart2 } from 'lucide-react';
+import { Link2, Search, AlertTriangle, CheckCircle, Clock, BarChart2 } from 'lucide-react';
 import GlowCard from '@/components/ui/GlowCard';
 
 const demoTopics = [

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BarChart3, TrendingUp, Download, Filter } from 'lucide-react';
+import { BarChart3, TrendingUp, Download } from 'lucide-react';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell,
   ScatterChart, Scatter, RadarChart, PolarGrid, PolarAngleAxis, Radar,
@@ -36,7 +36,7 @@ const radarMetrics = [
   { metric: 'Speed', score: 88 },
 ];
 
-const scatterData = Array.from({ length: 30 }, (_, i) => ({
+const scatterData = Array.from({ length: 30 }, () => ({
   x: Math.random() * 100,
   y: Math.random() * 100,
   z: Math.random() * 20 + 5,

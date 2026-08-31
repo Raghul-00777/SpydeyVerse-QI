@@ -228,64 +228,41 @@ const solutionDatabase: Record<string, Omit<Recommendation, 'id'>[]> = {
   ],
 };
 
-const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const DECISION_API_URL = '/api/decision-engine';
 
 async function analyzeWithGroq(query: string): Promise<{ recommendations: Omit<Recommendation, 'id'>[]; category: string; categoryLabel: string }> {
-  if (!GROQ_API_KEY) throw new Error('Groq API key not configured');
-
-  const prompt = `You are an AI decision engine specializing in optimization and algorithms. Analyze this query and recommend the best computing approaches.
-
-User query: "${query}"
-
-Respond ONLY with valid JSON:
-{
-  "category": "Optimization|AI/ML|Finance|Science|Security|Logistics|Healthcare|Infrastructure|Energy|Robotics|NLP|General",
-  "recommendations": [
-    {
-      "type": "classical|ai|quantum-inspired|future-quantum",
-      "title": "specific solution name",
-      "confidence": 0-100,
-      "reason": "detailed explanation of why this approach works",
-      "algorithm": "exact algorithm name",
-      "complexity": "big-O notation",
-      "pros": ["specific advantage 1", "specific advantage 2", "specific advantage 3"],
-      "cons": ["specific limitation 1", "specific limitation 2"],
-      "difficulty": "Low|Medium|High|Very High",
-      "estimatedCost": "$XXK-$XXK",
-      "timeToImplement": "X-Y months"
-    }
-  ]
-}
-
-Rules:
-1. Provide exactly 4 recommendations
-2. Mix classical, AI, and quantum-inspired approaches
-3. Make recommendations specific to the query domain
-4. Use real algorithm names and realistic complexity estimates
-5. Confidence scores should reflect real-world effectiveness`;
-
-  const response = await fetch(GROQ_API_URL, {
+  // Calls the serverless function that holds the Groq key (server-only).
+  const response = await fetch(DECISION_API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
-    body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 2500,
-      temperature: 0.2,
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
   });
 
-  if (!response.ok) throw new Error(`Groq API error: ${response.status}`);
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content || '';
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Could not parse Groq response');
-  const parsed = JSON.parse(jsonMatch[0]);
+  const text = await response.text();
+
+  if (!response.ok) {
+    // Log full status + body so a rate-limit failure is distinguishable from an invalid-key failure.
+    console.error(`[decision-engine] HTTP ${response.status}:`, text);
+    let detail = text;
+    try {
+      const j = JSON.parse(text);
+      if (j && j.error) detail = j.error;
+    } catch {
+      /* keep raw text */
+    }
+    throw new Error(`Groq/decision-engine request failed (HTTP ${response.status}): ${detail}`);
+  }
+
+  let parsed: { category?: string; recommendations?: Record<string, unknown>[] };
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error('Could not parse decision-engine response');
+  }
 
   const typeMap: Record<string, Recommendation['type']> = {
-    'classical': 'classical',
-    'ai': 'ai',
+    classical: 'classical',
+    ai: 'ai',
     'quantum-inspired': 'quantum-inspired',
     'future quantum': 'future-quantum',
     'future-quantum': 'future-quantum',
@@ -296,8 +273,23 @@ Rules:
     const confidence = typeof r.confidence === 'number' ? r.confidence : parseInt(String(r.confidence)) || 75;
     const pros = Array.isArray(r.pros) ? r.pros : [String(r.pros ?? 'Effective solution')];
     const cons = Array.isArray(r.cons) ? r.cons : [String(r.cons ?? 'Requires setup')];
-    const difficulty = typeof r.difficulty === 'string' && ['Low', 'Medium', 'High', 'Very High'].includes(r.difficulty) ? r.difficulty : 'Medium';
-    return { ...r, type, confidence, pros, cons, difficulty };
+    const difficulty =
+      typeof r.difficulty === 'string' && ['Low', 'Medium', 'High', 'Very High'].includes(r.difficulty)
+        ? r.difficulty
+        : 'Medium';
+    return {
+      type,
+      title: typeof r.title === 'string' ? r.title : 'AI Solution',
+      reason: typeof r.reason === 'string' ? r.reason : '',
+      algorithm: typeof r.algorithm === 'string' ? r.algorithm : undefined,
+      complexity: typeof r.complexity === 'string' ? r.complexity : undefined,
+      confidence,
+      pros,
+      cons,
+      difficulty,
+      estimatedCost: typeof r.estimatedCost === 'string' ? r.estimatedCost : '',
+      timeToImplement: typeof r.timeToImplement === 'string' ? r.timeToImplement : '',
+    } as Omit<Recommendation, 'id'>;
   });
 
   return {
@@ -379,6 +371,7 @@ export default function AIDecisionEngine() {
   const [showComparison, setShowComparison] = useState(false);
   const [category, setCategory] = useState('');
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [analysisNotice, setAnalysisNotice] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('ai_engine_history');
@@ -403,23 +396,20 @@ export default function AIDecisionEngine() {
     setSelectedForCompare([]);
     setShowComparison(false);
     setAnalysisError(null);
+    setAnalysisNotice(null);
 
     try {
       let recs: Recommendation[];
       let catLabel: string;
 
-      if (GROQ_API_KEY) {
-        try {
-          const groqResult = await analyzeWithGroq(query);
-          recs = groqResult.recommendations.map(s => ({ ...s, id: generateId() }));
-          catLabel = groqResult.categoryLabel;
-        } catch (groqError) {
-          console.warn('Groq analysis failed, using fallback:', groqError);
-          const fallback = analyzeQuery(query);
-          recs = fallback.recommendations;
-          catLabel = fallback.categoryLabel;
-        }
-      } else {
+      try {
+        const groqResult = await analyzeWithGroq(query);
+        recs = groqResult.recommendations.map(s => ({ ...s, id: generateId() }));
+        catLabel = groqResult.categoryLabel;
+      } catch (groqError) {
+        console.warn('Groq analysis failed, using local fallback:', groqError);
+        const reason = groqError instanceof Error ? groqError.message : 'Unknown error';
+        setAnalysisNotice(`Groq AI unavailable (${reason}). Showing local rule-based recommendations.`);
         const fallback = analyzeQuery(query);
         recs = fallback.recommendations;
         catLabel = fallback.categoryLabel;
@@ -566,6 +556,15 @@ ${r.cons.map(c => `- ${c}`).join('\n')}
           <div className="flex items-center gap-2">
             <AlertTriangle size={14} className="text-rose-400" />
             <div className="text-xs text-rose-400">{analysisError}</div>
+          </div>
+        </GlowCard>
+      )}
+
+      {analysisNotice && (
+        <GlowCard className="p-4 border-amber-500/30 bg-amber-500/10">
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={14} className="text-amber-400" />
+            <div className="text-xs text-amber-200">{analysisNotice}</div>
           </div>
         </GlowCard>
       )}

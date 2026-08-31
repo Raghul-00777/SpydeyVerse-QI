@@ -8,7 +8,7 @@ interface Props { metrics: QuantumMetric[]; summary: DatasetSummary; }
 
 const metricIcons: React.ElementType[] = [Atom, Zap, TrendingUp, Shield, Cpu, Activity];
 
-function QuantumMeter({ value, max = 100, label }: { value: number; max?: number; label: string }) {
+function QuantumMeter({ value, max = 100 }: { value: number; max?: number }) {
   const pct = (value / max) * 100;
   const color = pct >= 75 ? '#e01515' : pct >= 45 ? '#f59e0b' : '#ff4848';
   return (
@@ -107,7 +107,7 @@ export default function QuantumAnalytics({ metrics, summary }: Props) {
                 </div>
                 <div className="text-[11px] font-medium text-slate-300 leading-tight">{m.label}</div>
               </div>
-              <QuantumMeter value={typeof m.value === 'number' ? Math.round(m.value) : 0} label={m.label} />
+              <QuantumMeter value={typeof m.value === 'number' ? Math.round(m.value) : 0} />
               <div className="text-[10px] text-slate-600 mt-3 text-center leading-relaxed">{m.unit && `${m.unit} · `}{m.detail.slice(0, 60)}...</div>
             </GlowCard>
           );

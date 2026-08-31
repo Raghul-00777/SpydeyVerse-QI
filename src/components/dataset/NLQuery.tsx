@@ -20,6 +20,8 @@ const SUGGESTIONS = [
 ];
 
 export default function NLQuery({ summary, rows }: Props) {
+  void rows;
+
   const [messages, setMessages] = useState<Message[]>([{
     role: 'bot',
     text: `Hello! I'm your Quantum AI Data Assistant. I've analysed your dataset (${summary.totalRows.toLocaleString()} rows, ${summary.totalCols} columns). Ask me anything about it!`,
@@ -39,7 +41,7 @@ export default function NLQuery({ summary, rows }: Props) {
     setTyping(true);
 
     setTimeout(() => {
-      const answer = answerNLQuery(question, summary, rows);
+      const answer = answerNLQuery(question, summary);
       setMessages(prev => [...prev, { role: 'bot', text: answer, ts: new Date().toLocaleTimeString() }]);
       setTyping(false);
     }, 700 + Math.random() * 500);

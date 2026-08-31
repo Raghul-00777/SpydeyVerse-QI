@@ -2,13 +2,21 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const hasSupabaseConfig = Boolean(supabaseUrl && supabaseAnonKey);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(
+  hasSupabaseConfig ? supabaseUrl : 'http://127.0.0.1:54321',
+  hasSupabaseConfig ? supabaseAnonKey : 'missing-supabase-anon-key'
+);
 
 let _supabaseAvailable: boolean | null = null;
 
 export async function checkSupabaseAvailable(): Promise<boolean> {
   if (_supabaseAvailable !== null) return _supabaseAvailable;
+  if (!hasSupabaseConfig) {
+    _supabaseAvailable = false;
+    return _supabaseAvailable;
+  }
   try {
     // getSession() only reads local storage — doesn't validate the key.
     // Use a real API call to verify the anon key is actually usable.

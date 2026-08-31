@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Bell, Search, Command } from 'lucide-react';
+import { Bell, Search, Command, Menu } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+
+interface TopBarProps {
+  onMenuToggle: () => void;
+}
 
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': { title: 'Dashboard', subtitle: 'Overview of your quantum intelligence platform' },
@@ -19,7 +23,7 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
   '/dataset-lab':  { title: 'Quantum Dataset Lab', subtitle: 'Upload, analyse, visualise and train on your data' },
 };
 
-export default function TopBar() {
+export default function TopBar({ onMenuToggle }: TopBarProps) {
   const location = useLocation();
   const { profile } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -36,9 +40,18 @@ export default function TopBar() {
   return (
     <header className="h-14 flex items-center justify-between px-6 border-b border-white/5 bg-void-2/50 backdrop-blur-sm flex-shrink-0">
       {/* Page info */}
-      <div>
-        <h1 className="text-sm font-semibold text-white">{page.title}</h1>
-        <p className="text-[11px] text-slate-500 hidden sm:block">{page.subtitle}</p>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={onMenuToggle}
+          className="sm:hidden inline-flex items-center justify-center rounded-lg bg-white/5 p-2 text-slate-300 hover:text-white hover:bg-white/10 transition-all"
+          aria-label="Open menu"
+        >
+          <Menu size={18} />
+        </button>
+        <div>
+          <h1 className="text-sm font-semibold text-white">{page.title}</h1>
+          <p className="text-[11px] text-slate-500 hidden sm:block">{page.subtitle}</p>
+        </div>
       </div>
 
       {/* Right actions */}

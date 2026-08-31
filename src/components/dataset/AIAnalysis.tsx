@@ -1,4 +1,4 @@
-import { AlertCircle, TrendingUp, Info, Lightbulb, Brain, ChevronRight } from 'lucide-react';
+import { AlertCircle, TrendingUp, Info, Lightbulb, Brain } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
 import type { DatasetSummary, AIInsight, MLRecommendation } from './types';
 import GlowCard from '@/components/ui/GlowCard';
@@ -22,7 +22,7 @@ const taskColor: Record<string, string> = {
 };
 
 export default function AIAnalysis({ summary, insights, recommendations }: Props) {
-  const { columns, numericCols, correlation } = summary;
+  const { columns, correlation } = summary;
 
   const numStats = columns.filter(c => c.type === 'number').slice(0, 8);
   const meanData = numStats.map(c => ({ name: c.name.slice(0, 12), mean: c.mean ?? 0, std: c.std ?? 0 }));

@@ -20,15 +20,6 @@ const personas = [
   { id: 'business', icon: Briefcase, label: 'Business AI', color: 'from-amber-500 to-orange-500', desc: 'Strategy & analytics' },
 ];
 
-const quickPrompts = [
-  'Explain quantum superposition in simple terms',
-  'What is Dijkstra\'s algorithm?',
-  'How does deepfake detection work?',
-  'What is the difference between AI and quantum computing?',
-  'Explain the Hadamard gate',
-  'How can I optimize my supply chain?',
-];
-
 const personaSystemPrompts: Record<string, string> = {
   quantum: `You are a quantum computing tutor for the SpydeyVerse platform. You explain quantum computing concepts (qubits, superposition, entanglement, quantum gates, quantum algorithms) clearly and with intuition-building analogies. You can discuss real quantum hardware, quantum supremacy, and near-term quantum applications. Be conversational but precise.`,
   code: `You are a programming assistant. You help with algorithm implementation, data structures, design patterns, code review, optimization, and debugging across languages including Python, JavaScript/TypeScript, Java, C++, and SQL. Provide clear code examples. Be concise and practical.`,
@@ -67,6 +58,7 @@ export default function AIChatbot() {
   const [persona, setPersona] = useState('quantum');
   const [loading, setLoading] = useState(true);
   const [usingFallback, setUsingFallback] = useState(false);
+  const [providerStatus, setProviderStatus] = useState<string>('');
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -99,6 +91,7 @@ export default function AIChatbot() {
     setInput('');
     setSending(true);
     setUsingFallback(false);
+    setProviderStatus('');
 
     const userMsg: Message = {
       id: crypto.randomUUID(),
@@ -130,8 +123,16 @@ export default function AIChatbot() {
       reply = await openRouterChat(chatMessages, { max_tokens: 1024, temperature: 0.7 });
     } catch (err) {
       if (err instanceof OpenRouterError) {
+        if (err.isRateLimitError) {
+          setProviderStatus('AI provider is rate-limited or quota-blocked. Billing or usage limits may need to be fixed.');
+        } else if (err.isConfigError) {
+          setProviderStatus('AI key is missing or invalid. Check the Vercel environment variables.');
+        } else {
+          setProviderStatus('AI provider unavailable. Using local fallback response.');
+        }
         console.warn('OpenRouter fallback:', err.message);
       } else {
+        setProviderStatus('AI provider unavailable. Using local fallback response.');
         console.warn('Chat API error, using fallback:', err);
       }
       setUsingFallback(true);
@@ -221,18 +222,6 @@ export default function AIChatbot() {
             </div>
           </GlowCard>
 
-          {/* Quick prompts */}
-          <GlowCard className="p-3">
-            <div className="text-[11px] text-slate-500 font-medium mb-2">Quick Prompts</div>
-            <div className="space-y-1">
-              {quickPrompts.map(q => (
-                <button key={q} onClick={() => sendMessage(q)}
-                  className="w-full text-left p-2 rounded-lg text-[11px] text-slate-400 hover:text-white hover:bg-white/5 transition-all leading-relaxed">
-                  {q}
-                </button>
-              ))}
-            </div>
-          </GlowCard>
         </div>
 
         {/* Chat area */}
@@ -243,13 +232,19 @@ export default function AIChatbot() {
               <div className={`w-2 h-2 rounded-full animate-pulse ${isOpenRouterConfigured() ? 'bg-emerald-400' : 'bg-amber-400'}`} />
               <span className="text-xs text-slate-400">
                 {personas.find(p => p.id === persona)?.label || 'AI Assistant'} — Active
-                {isOpenRouterConfigured() ? ' · AI Online' : ' · Local Mode'}
+                {providerStatus ? ' · AI Unavailable' : (isOpenRouterConfigured() ? ' · AI Online' : ' · Local Mode')}
               </span>
             </div>
             <button onClick={clearChat} className="flex items-center gap-1 text-[11px] text-slate-600 hover:text-rose-400 transition-colors">
               <Trash2 size={11} />Clear
             </button>
           </div>
+
+          {providerStatus && (
+            <div className="mx-4 mt-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+              {providerStatus}
+            </div>
+          )}
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">

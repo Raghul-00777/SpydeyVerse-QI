@@ -30,17 +30,17 @@ export default function SpiderWebBackground() {
       pulseSpeed: number;
     }
 
-    // Higher particle density for a robust web background effect
-    const count = Math.min(140, Math.max(92, Math.floor((canvas.width * canvas.height) / 8200)));
+    // Moderate particle density for a lower-intensity but visible background
+    const count = Math.min(90, Math.max(50, Math.floor((canvas.width * canvas.height) / 11500)));
     const particles: Particle[] = Array.from({ length: count }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.18,
-      vy: (Math.random() - 0.5) * 0.18,
-      size: Math.random() * 1.8 + 0.9,
-      opacity: Math.random() * 0.5 + 0.28,
+      vx: (Math.random() - 0.5) * 0.1,
+      vy: (Math.random() - 0.5) * 0.1,
+      size: Math.random() * 1.2 + 0.6,
+      opacity: Math.random() * 0.35 + 0.18,
       pulse: Math.random() * Math.PI * 2,
-      pulseSpeed: Math.random() * 0.005 + 0.0022,
+      pulseSpeed: Math.random() * 0.003 + 0.0012,
     }));
 
     const mouse = { x: -2000, y: -2000 };
@@ -84,18 +84,18 @@ export default function SpiderWebBackground() {
         // Mouse repulsion — push particles away from cursor
         const mdx = p.x - mouse.x, mdy = p.y - mouse.y;
         const md  = Math.sqrt(mdx * mdx + mdy * mdy);
-        if (md < 150 && md > 0) {
-          p.vx += (mdx / md) * 0.055;
-          p.vy += (mdy / md) * 0.055;
+        if (md < 120 && md > 0) {
+          p.vx += (mdx / md) * 0.03;
+          p.vy += (mdy / md) * 0.03;
         }
 
         // Speed cap
         const sp = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-        if (sp > 0.9) { p.vx = (p.vx / sp) * 0.9; p.vy = (p.vy / sp) * 0.9; }
+        if (sp > 0.5) { p.vx = (p.vx / sp) * 0.5; p.vy = (p.vy / sp) * 0.5; }
       }
 
       // ── Web strands between particles ───────────────
-      const CONNECT_DIST = 180;
+      const CONNECT_DIST = 110;
 
       for (let i = 0; i < particles.length; i++) {
         const pi = particles[i];
@@ -107,7 +107,7 @@ export default function SpiderWebBackground() {
 
           if (dist < CONNECT_DIST) {
             const ratio = 1 - dist / CONNECT_DIST;
-            const alpha = ratio * 0.55;
+            const alpha = ratio * 0.28;
             drawGlowLine(pi.x, pi.y, pj.x, pj.y, alpha, false);
           }
         }
@@ -115,11 +115,11 @@ export default function SpiderWebBackground() {
         // ── Mouse web strands ─────────────────────────
         const mdx = pi.x - mouse.x, mdy = pi.y - mouse.y;
         const md  = Math.sqrt(mdx * mdx + mdy * mdy);
-        const MOUSE_DIST = 230;
+        const MOUSE_DIST = 140;
 
         if (md < MOUSE_DIST) {
           const ratio = 1 - md / MOUSE_DIST;
-          const alpha = ratio * 0.85;
+          const alpha = ratio * 0.42;
           drawGlowLine(pi.x, pi.y, mouse.x, mouse.y, alpha, true);
         }
       }
@@ -145,8 +145,8 @@ export default function SpiderWebBackground() {
 
       // ── Mouse cursor web hub ────────────────────────
       if (mouse.x > -1000) {
-        // Stronger cursor hub pulsing for a higher visual impact
-        const hubPulse = 0.6 + Math.sin(frame * 0.038) * 0.42;
+        // Lower cursor hub pulse intensity
+        const hubPulse = 0.6 + Math.sin(frame * 0.024) * 0.22;
 
         ctx.beginPath();
         ctx.arc(mouse.x, mouse.y, 18, 0, Math.PI * 2);

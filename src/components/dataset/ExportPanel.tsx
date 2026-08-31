@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Download, FileText, Table, Code, Image, CheckCircle } from 'lucide-react';
+import { Download, FileText, Table, Code, CheckCircle } from 'lucide-react';
 import type { DatasetSummary, DataRow, AIInsight, MLRecommendation } from './types';
 import GlowCard from '@/components/ui/GlowCard';
 
